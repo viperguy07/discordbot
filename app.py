@@ -160,8 +160,6 @@ async def adult(ctx, member: discord.Member):
     print(ctx.author)
     print(member)
     role = discord.utils.get(ctx.guild.roles, name="Adult")
-    if ctx.author == 'viciousatomizer#6088':
-        await ctx.send("Suck it {}".format(ctx.author.display_name))
     if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
         await member.add_roles(role)
 
