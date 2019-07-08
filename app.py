@@ -54,7 +54,8 @@ async def test(ctx, member: discord.Member, clan):
     print(author)
 
 
-@bot.command(brief="Add new member to a clan", description="To use: .add <@newMember> <Clan> Example: .add @Viperguy07 Wrath")
+@bot.command(brief="Add new member to a clan", description="To use: .add <@newMember> <Clan> Example: .add "
+                                                           "@Viperguy07 Wrath")
 async def add(ctx, member: discord.Member, clan):
     author_nic = ctx.author.display_name
     author_rank = author_nic[3:4]
@@ -68,20 +69,24 @@ async def add(ctx, member: discord.Member, clan):
     rank_allowed = ["C", "L"]
     if clan in clan_prefix:
         if clan_tag in clan_prefix:
-            await ctx.send("{} is already in a clan, if you want to switch him use the clan change command .clanchange".format(member.display_name))
-        elif author_rank in rank_allowed and clan_prefix[author_clan] == clan or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+            await ctx.send("{} is already in a clan, if you want to switch him use the clan change command "
+                           ".clanchange".format(member.display_name))
+        elif author_rank in rank_allowed and clan_prefix[author_clan] == clan \
+                or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
                 nickname = clans[clan.lower()] + " " + member.display_name.split()[0]
                 await member.edit(nick=nickname, roles=[role])
                 await  ctx.send(
                     "Welcome {}, you are now part of {} clan and you can see your clan chat now".format(nickname, clan)
                 )
         else:
-            await ctx.send("Contact someone in leadership or the Captain/Lieutenant of the clan to add {} to this clan.")
+            await ctx.send("Contact someone in leadership or the Captain/Lieutenant of the clan to "
+                           "add {} to this clan.")
     else:
         await ctx.send("{} is not the name of any of our clans please try again".format(clan))
 
 
-@bot.command(brief="Changes your GamerTag on this server", description="Just type .gt <new GamerTage> with out the '<>' example: .gt IlovePopCorn")
+@bot.command(brief="Changes your GamerTag on this server", description="Just type .gt <new GamerTage> with out the "
+                                                                       "'<>' example: .gt IlovePopCorn")
 async def gt(ctx, *, gt):
     author_nic = ctx.author.display_name
     author_clan = author_nic[:3]
@@ -105,8 +110,10 @@ async def promote(ctx, member: discord.Member):
 
     rank_allowed = ["C", "L"]
 
-    #  If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then grant the request.
-    if author_rank in rank_allowed and author_clan == member_clan or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+    # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
+    # grant the request.
+    if author_rank in rank_allowed and author_clan == member_clan or "leadership" \
+            in [y.name.lower() for y in ctx.message.author.roles]:
         if member_rank in promo_rank:
             new_rank = list(member_nic)
             new_rank[3] = promo_rank[member_rank]
@@ -131,8 +138,10 @@ async def demote(ctx, member: discord.Member):
 
     rank_allowed = ["C", "L"]
 
-    #  If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then grant the request.
-    if author_rank in rank_allowed and author_clan == member_clan or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+    # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
+    # grant the request.
+    if author_rank in rank_allowed and author_clan == member_clan \
+            or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
         if member_rank in demote_rank:
             new_rank = list(member_nic)
             new_rank[3] = demote_rank[member_rank]
@@ -140,9 +149,21 @@ async def demote(ctx, member: discord.Member):
             await member.edit(nick=new_rank)
             await ctx.send("{} you have been demoted!".format(new_rank))
         else:
-            await ctx.send("Recruite is the lowest rank, you might want to think of kicking {} if it's that bad".format(member))
+            await ctx.send("Recruite is the lowest rank, you might want to think of "
+                           "kicking {} if it's that bad".format(member))
     else:
         await ctx.send("You don't have permissions to demote {} contact leadership".format(member))
+
+
+@bot.command(brief="Add to Adult Chat", description=".adult <@Member> and member will be added to adult chat")
+async def adult(ctx, member: discord.Member):
+    print(ctx.author)
+    print(member)
+    role = discord.utils.get(ctx.guild.roles, name="Adult")
+    if ctx.author == 'viciousatomizer#6088':
+        await ctx.send("Suck it {}".format(ctx.author.display_name))
+    if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+        await member.add_roles(role)
 
 
 @bot.event
