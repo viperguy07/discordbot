@@ -67,7 +67,7 @@ async def add(ctx, member: discord.Member, clan):
     role = discord.utils.get(ctx.guild.roles, name=clan)
     clan_tag = member_nic[:3]
     rank_allowed = ["C", "L"]
-    if clan in clan_prefix:
+    if clan.lower() in clans:
         if clan_tag in clan_prefix:
             await ctx.send("{} is already in a clan, if you want to switch him use the clan change command "
                            ".clanchange".format(member.display_name))
