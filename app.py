@@ -14,7 +14,7 @@ clans = {
         "pride": "PDxR",
         "sloth": "SLrR",
         "wrath": "WRhR"
-    }
+}
 clan_prefix = {
     'ENp': 'Envy', 
     'GLp': 'Gluttony', 
@@ -63,12 +63,12 @@ async def add(ctx, member: discord.Member, clan):
     author_rank = author_nic[3:4]
     author_clan = author_nic[:3]
     member_nic = member.display_name
-    
     clan = clan.lower()
     clan = clan[0].upper() + clan[1:]
     role = discord.utils.get(ctx.guild.roles, name=clan)
     clan_tag = member_nic[:3]
     rank_allowed = ["C", "L"]
+
     if clan.lower() in clans:
         if clan_tag in clan_prefix:
             await ctx.send("{} is already in a clan, if you want to switch him use the clan change command "
@@ -88,8 +88,36 @@ async def add(ctx, member: discord.Member, clan):
         await ctx.send("{} is not the name of any of our clans please try again".format(clan))
 
 
-@bot.command(brief="Changes your GamerTag on this server", description="Just type .gt <new GamerTage> with out the "
-                                                                       "'<>' example: .gt IlovePopCorn")
+@bot.command(
+    brief="Change a member to a different clan",
+    description=""
+                "To use type: "
+                ".clanchange <@newMember> <Clan> "
+                "Example: .clanchange @Viperguy07 Wrath"
+)
+async def clanchange(ctx, member: discord.Member, clan):
+    member_nic = member.display_name
+    c_rank = member_nic[3:4]
+    c_gt = member_nic[5:]
+    clan = clan.lower()
+    clan = clan[0].upper() + clan[1:]
+    clan = clans[clan.lower()][:-1]
+    new_nic = "{}{} {}".format(clan, c_rank, c_gt)
+    role = discord.utils.get(ctx.guild.roles, name=clan)
+
+    if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+        await member.edit(nick=new_nic, roles=[role])
+        await  ctx.send(
+            "The request to change {} clans has been approve, Welcome {} the {} clan".format(c_gt, c_gt, clan)
+        )
+    else:
+        await ctx.send("Contact someone in leadership to request this change.")
+
+
+@bot.command(
+    brief="Changes your GamerTag on this server",
+    description="Just type .gt <new GamerTage> with out the '<>' example: .gt IlovePopCorn"
+)
 async def gt(ctx, *, gtag):
     author_nic = ctx.author.display_name
     author_clan = author_nic[:3]
@@ -106,11 +134,9 @@ async def promote(ctx, member: discord.Member):
     author_nic = ctx.author.display_name
     author_rank = author_nic[3:4]
     author_clan = author_nic[:3]
-
     member_nic = member.display_name
     member_clan = member_nic[:3]
     member_rank = member_nic[3:4]
-
     rank_allowed = ["C", "L"]
 
     # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
@@ -134,11 +160,9 @@ async def demote(ctx, member: discord.Member):
     author_nic = ctx.author.display_name
     author_rank = author_nic[3:4]
     author_clan = author_nic[:3]
-
     member_nic = member.display_name
     member_clan = member_nic[:3]
     member_rank = member_nic[3:4]
-
     rank_allowed = ["C", "L"]
 
     # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
@@ -160,10 +184,12 @@ async def demote(ctx, member: discord.Member):
 
 @bot.command(brief="Add to Adult Chat", description=".adult <@Member> and member will be added to adult chat")
 async def adult(ctx, member: discord.Member):
-    print(ctx.author)
-    print(member)
+    author_nic = ctx.author.display_name
+    author_rank = author_nic[3:4]
+    rank_allowed = ["C", "L"]
     role = discord.utils.get(ctx.guild.roles, name="Adult")
-    if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+
+    if author_rank in rank_allowed or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
         await member.add_roles(role)
 
 
