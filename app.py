@@ -54,8 +54,10 @@ async def test(ctx, member: discord.Member, clan):
     print(author)
 
 
-@bot.command(brief="Add new member to a clan", description="To use: .add <@newMember> <Clan> Example: .add "
-                                                           "@Viperguy07 Wrath")
+@bot.command(
+    brief="Add new member to a clan",
+    description="To use: .add <@newMember> <Clan> Example: .add @Viperguy07 Wrath"
+)
 async def add(ctx, member: discord.Member, clan):
     author_nic = ctx.author.display_name
     author_rank = author_nic[3:4]
@@ -73,7 +75,8 @@ async def add(ctx, member: discord.Member, clan):
                            ".clanchange".format(member.display_name))
         elif author_rank in rank_allowed and clan_prefix[author_clan] == clan \
                 or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
-                nickname = clans[clan.lower()] + " " + member.display_name.split()[0]
+
+                nickname = clans[clan.lower()] + " " + member.display_name
                 await member.edit(nick=nickname, roles=[role])
                 await  ctx.send(
                     "Welcome {}, you are now part of {} clan and you can see your clan chat now".format(nickname, clan)
