@@ -90,13 +90,13 @@ async def add(ctx, member: discord.Member, clan):
 
 @bot.command(brief="Changes your GamerTag on this server", description="Just type .gt <new GamerTage> with out the "
                                                                        "'<>' example: .gt IlovePopCorn")
-async def gt(ctx, *, gt):
+async def gt(ctx, *, gtag):
     author_nic = ctx.author.display_name
     author_clan = author_nic[:3]
     if author_clan in clan_prefix:
-        new_gt = author_nic[:4] + " " + gt
+        new_gt = author_nic[:4] + " " + gtag
     else:
-        new_gt = gt
+        new_gt = gtag
     await ctx.author.edit(nick=new_gt)
     await ctx.send("Your GamerTag has been updated.")
 
