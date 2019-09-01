@@ -155,6 +155,52 @@ async def promote(ctx, member: discord.Member):
         await ctx.send("You don't have permissions to promote {}".format(member))
 
 
+@bot.command(brief="Assign member to a squad", description=".squad <@Member> <squad>")
+async def squad(ctx, member: discord.Member, r_squad):
+    author_nic = ctx.author.display_name
+
+    author_rank = author_nic[3:4]
+    author_clan = author_nic[:3]
+
+    member_nic = member.display_name
+    member_clan = member_nic[:3]
+
+    rank_allowed = ["C", "L"]
+
+    squads = {
+        'a': 'a',
+        'A': 'a',
+        'alpha': 'a',
+        'Alpha': 'a',
+        'b': 'b',
+        'B': 'b',
+        'bravo': 'b',
+        'Bravo': 'b',
+        'c': 'c',
+        'C': 'c',
+        'charlie': 'c',
+        'Charlie': 'c',
+        'd': 'd',
+        'D': 'd',
+        'delta': 'd',
+        'Delta': 'd'
+    }
+    new_squad = squads[r_squad]
+
+    nic_li = list(member_nic)
+    nic_li[2] = new_squad
+    new_nic = "".join(nic_li)
+
+    # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
+    # grant the request.
+    if author_rank in rank_allowed and author_clan == member_clan or "leadership" \
+            in [y.name.lower() for y in ctx.message.author.roles]:
+        await member.edit(nick=new_nic)
+        await ctx.send("Congrats {} you have been assign your new squad!".format(new_nic))
+    else:
+        await ctx.send("You don't have permissions to assign members to squads please ask your captain or leadership")
+
+
 @bot.command(brief="Demote Player", description=".demote <@Member> and they will be demoted")
 async def demote(ctx, member: discord.Member):
     author_nic = ctx.author.display_name
