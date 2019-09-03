@@ -7,16 +7,16 @@ TOKEN = os.environ['DISCORD_TOKEN']
 bot = commands.Bot(command_prefix='.')
 
 clans = {
-        "envy": "ENpR",
-        "gluttony": "GLpR",
-        "greed": "GRdR",
-        "lust": "LUaR",
-        "pride": "PDxR",
-        "sloth": "SLrR",
-        "wrath": "WRhR"
+        "envy": "EN-",
+        "gluttony": "GLp",
+        "greed": "GRd",
+        "lust": "LUa",
+        "pride": "PDx",
+        "sloth": "SLr",
+        "wrath": "WRh"
 }
 clan_prefix = {
-    'ENp': 'Envy', 
+    'EN-': 'Envy',
     'GLp': 'Gluttony', 
     'LUa': 'Lust', 
     'PDx': 'Pride', 
@@ -73,14 +73,12 @@ async def add(ctx, member: discord.Member, clan):
         if clan_tag in clan_prefix:
             await ctx.send("{} is already in a clan, if you want to switch him use the clan change command "
                            ".clanchange".format(member.display_name))
-        elif author_rank in rank_allowed and clan_prefix[author_clan] == clan \
-                or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
-
-                nickname = clans[clan.lower()] + " " + member.display_name
-                await member.edit(nick=nickname, roles=[role])
-                await  ctx.send(
-                    "Welcome {}, you are now part of {} clan and you can see your clan chat now".format(nickname, clan)
-                )
+        elif author_rank in rank_allowed or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+            nickname = clans[clan.lower()] + "R " + member.display_name
+            await member.edit(nick=nickname, roles=[role])
+            await ctx.send(
+                "Welcome {}, you are now part of {} clan and you can see your clan chat now".format(nickname, clan)
+            )
         else:
             await ctx.send("Contact someone in leadership or the Captain/Lieutenant of the clan to "
                            "add {} to this clan.")
@@ -95,19 +93,23 @@ async def add(ctx, member: discord.Member, clan):
                 ".clanchange <@newMember> <Clan> "
                 "Example: .clanchange @Viperguy07 Wrath"
 )
-async def clanchange(ctx, member: discord.Member, clan):
+async def clanchange(ctx, clan, member: discord.Member):
     member_nic = member.display_name
+    print(member)
     c_rank = member_nic[3:4]
     c_gt = member_nic[5:]
+    c_clan = member_nic[:3]
     clan = clan.lower()
     clan = clan[0].upper() + clan[1:]
-    clan = clans[clan.lower()][:-1]
-    new_nic = "{}{} {}".format(clan, c_rank, c_gt)
+    new_nic = "{}{} {}".format(clans[clan], c_rank, c_gt)
     role = discord.utils.get(ctx.guild.roles, name=clan)
+    old_clan_role = discord.utils.get(ctx.guild.roles, name=c_clan)
 
     if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+        # await member.remove_roles(member, old_clan_role)
+        print('here')
         await member.edit(nick=new_nic, roles=[role])
-        await  ctx.send(
+        await ctx.send(
             "The request to change {} clans has been approve, Welcome {} the {} clan".format(c_gt, c_gt, clan)
         )
     else:
@@ -160,10 +162,10 @@ async def squad(ctx, member: discord.Member, r_squad):
     author_nic = ctx.author.display_name
 
     author_rank = author_nic[3:4]
-    author_clan = author_nic[:3]
+    author_clan = author_nic[:2]
 
     member_nic = member.display_name
-    member_clan = member_nic[:3]
+    member_clan = member_nic[:2]
 
     rank_allowed = ["C", "L"]
 
