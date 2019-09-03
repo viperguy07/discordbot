@@ -90,8 +90,8 @@ async def add(ctx, member: discord.Member, clan):
     brief="Change a member to a different clan",
     description=""
                 "To use type: "
-                ".clanchange <@newMember> <Clan> "
-                "Example: .clanchange @Viperguy07 Wrath"
+                ".clanchange <Clan> <@newMember> "
+                "Example: .clanchange Wrath @Viperguy07"
 )
 async def clanchange(ctx, clan, member: discord.Member):
     member_nic = member.display_name
