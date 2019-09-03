@@ -17,6 +17,10 @@ clans = {
 }
 clan_prefix = {
     'EN-': 'Envy',
+    'ENa': 'Envy',
+    'ENb': 'Envy',
+    'ENc': 'Envy',
+    'ENd': 'Envy',
     'GLp': 'Gluttony', 
     'LUa': 'Lust', 
     'PDx': 'Pride', 
@@ -61,7 +65,6 @@ async def test(ctx, member: discord.Member, clan):
 async def add(ctx, member: discord.Member, clan):
     author_nic = ctx.author.display_name
     author_rank = author_nic[3:4]
-    author_clan = author_nic[:3]
     member_nic = member.display_name
     clan = clan.lower()
     clan = clan[0].upper() + clan[1:]
@@ -135,9 +138,9 @@ async def gt(ctx, *, gtag):
 async def promote(ctx, member: discord.Member):
     author_nic = ctx.author.display_name
     author_rank = author_nic[3:4]
-    author_clan = author_nic[:3]
+    author_clan = author_nic[:2]
     member_nic = member.display_name
-    member_clan = member_nic[:3]
+    member_clan = member_nic[:2]
     member_rank = member_nic[3:4]
     rank_allowed = ["C", "L"]
 
@@ -207,9 +210,9 @@ async def squad(ctx, member: discord.Member, r_squad):
 async def demote(ctx, member: discord.Member):
     author_nic = ctx.author.display_name
     author_rank = author_nic[3:4]
-    author_clan = author_nic[:3]
+    author_clan = author_nic[:2]
     member_nic = member.display_name
-    member_clan = member_nic[:3]
+    member_clan = member_nic[:2]
     member_rank = member_nic[3:4]
     rank_allowed = ["C", "L"]
 
