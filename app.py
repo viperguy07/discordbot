@@ -64,7 +64,7 @@ async def test(ctx):
 
 @bot.command(
     brief="Kick a member from the community.",
-    description="You must include and member and a reason\n"
+    description="You must include a member and a reason\n"
                 "For Example:\n"
                 ".kick @TestMonkey 'Didn't report hours'"
 )
