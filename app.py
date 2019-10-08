@@ -51,16 +51,49 @@ async def ping(ctx):
 
 
 @bot.command()
-async def test(ctx, member: discord.Member, clan):
-    clan_tag = member.display_name
-    author = ctx.author.display_name
-    print(clan_tag)
-    print(author)
+async def test(ctx):
+    channels = ["bot-test"]
+    if str(ctx.channel) in channels:
+        x = list([member.display_name for member in ctx.guild.members])
+        x.sort()
+        x = "\n".join(x)
+        await ctx.send(x)
+    else:
+        await ctx.send("Test was successful. :radioactive: Now launching the NUKES...  :radioactive: ")
+
+
+@bot.command(
+    brief="Kick a member from the community.",
+    description="You must include and member and a reason\n"
+                "For Example:\n"
+                ".kick @TestMonkey 'Didn't report hours'"
+)
+async def kick(ctx, member: discord.Member, reason):
+    author_rank = ctx.author.display_name[3:4]
+    rank_allowed = ["C", "L"]
+    channels = ["general"]
+
+    if author_rank in rank_allowed or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+        if str(ctx.channel) in channels:
+            await ctx.guild.kick(member, reason=reason)
+            await ctx.send("{0} got the :boot: - Have a great rest of your day {0}, somewhere else."
+                           .format(member.display_name))
+        else:
+            await ctx.send("You can only use this command in the 'general' chat. and your are in {}".format(ctx.channel))
+    else:
+        await ctx.send("You don't have the rank to execute this command.")
+
+
+@kick.error
+async def kick_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('You must include a reason for kicking this user like this example: '
+                       '.kick @testmonkey "Failed to report hours"')
 
 
 @bot.command(
     brief="Add new member to a clan",
-    description="To use: .add <@newMember> <Clan> Example: .add @Viperguy07 Wrath"
+    description="To use: .add <@newMember> <Clan> Example: .add @TestMonkey Wrath"
 )
 async def add(ctx, member: discord.Member, clan):
     author_nic = ctx.author.display_name
@@ -101,15 +134,12 @@ async def clanchange(ctx, clan, member: discord.Member):
     print(member)
     c_rank = member_nic[3:4]
     c_gt = member_nic[5:]
-    c_clan = member_nic[:3]
     clan = clan.lower()
     clan = clan[0].upper() + clan[1:]
     new_nic = "{}{} {}".format(clans[clan], c_rank, c_gt)
     role = discord.utils.get(ctx.guild.roles, name=clan)
-    old_clan_role = discord.utils.get(ctx.guild.roles, name=c_clan)
 
     if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
-        # await member.remove_roles(member, old_clan_role)
         print('here')
         await member.edit(nick=new_nic, roles=[role])
         await ctx.send(
@@ -227,7 +257,7 @@ async def demote(ctx, member: discord.Member):
             await member.edit(nick=new_rank)
             await ctx.send("{} you have been demoted!".format(new_rank))
         else:
-            await ctx.send("Recruite is the lowest rank, you might want to think of "
+            await ctx.send("Recruit is the lowest rank, you might want to think of "
                            "kicking {} if it's that bad".format(member))
     else:
         await ctx.send("You don't have permissions to demote {} contact leadership".format(member))
@@ -246,6 +276,6 @@ async def adult(ctx, member: discord.Member):
 
 @bot.event
 async def on_member_join(member):
-    print('Wow you Joined the Server')
+    print('Wow {} Joined the Server'.format(member))
 
 bot.run(TOKEN)
