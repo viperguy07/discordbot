@@ -103,7 +103,7 @@ async def add(ctx, member: discord.Member, clan):
     clan = clan[0].upper() + clan[1:]
     role = discord.utils.get(ctx.guild.roles, name=clan)
     clan_tag = member_nic[:3]
-    rank_allowed = ["C", "L"]
+    rank_allowed = ["C", "L", "S"]
 
     if clan.lower() in clans:
         if clan_tag in clan_prefix:
