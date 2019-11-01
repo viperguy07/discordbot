@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands
 import os
@@ -10,7 +12,7 @@ clans = {
         "envy": "EN-",
         "gluttony": "GLp",
         "greed": "GRd",
-        "lust": "LUa",
+        "lust": "LU-",
         "pride": "PDx",
         "sloth": "SLr",
         "wrath": "WRh"
@@ -22,7 +24,9 @@ clan_prefix = {
     'ENc': 'Envy',
     'ENd': 'Envy',
     'GLp': 'Gluttony', 
-    'LUa': 'Lust', 
+    'LU-': 'Lust',
+    'LUa': 'Lust',
+    'LUb': 'Lust',
     'PDx': 'Pride', 
     'SLr': 'Sloth', 
     'WRh': 'Wrath'
@@ -126,25 +130,24 @@ async def add(ctx, member: discord.Member, clan):
     brief="Change a member to a different clan",
     description=""
                 "To use type: "
-                ".clanchange <Clan> <@newMember> "
-                "Example: .clanchange Wrath @Viperguy07"
+                ".clanchange <@newMember> <Clan>"
+                "Example: .clanchange @TestMonkey lust"
 )
-async def clanchange(ctx, clan, member: discord.Member):
+async def clanchange(ctx, member: discord.Member, clan):
     member_nic = member.display_name
     print(member)
     c_rank = member_nic[3:4]
     c_gt = member_nic[5:]
-    clan = clan.lower()
-    clan = clan[0].upper() + clan[1:]
-    new_nic = "{}{} {}".format(clans[clan], c_rank, c_gt)
+    clan_l = clan.lower()
+    clan = clan_l[0].upper() + clan_l[1:]
     role = discord.utils.get(ctx.guild.roles, name=clan)
 
     if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
         print('here')
+        new_nic = "{}{} {}".format(clans[clan_l], c_rank, c_gt)
         await member.edit(nick=new_nic, roles=[role])
-        await ctx.send(
-            "The request to change {} clans has been approve, Welcome {} the {} clan".format(c_gt, c_gt, clan)
-        )
+        await ctx.send("The request to change {} clans has been approve, "
+                       "Welcome {} the {} clan".format(c_gt, c_gt, clan))
     else:
         await ctx.send("Contact someone in leadership to request this change.")
 
@@ -272,6 +275,13 @@ async def adult(ctx, member: discord.Member):
 
     if author_rank in rank_allowed or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
         await member.add_roles(role)
+
+
+@bot.command()
+async def delete(ctx):
+    author = str(ctx.author)
+    if author == 'viperguy07#2473':
+        await ctx.channel.purge(limit=100)
 
 
 @bot.event
