@@ -239,6 +239,13 @@ async def squad(ctx, member: discord.Member, r_squad):
         await ctx.send("You don't have permissions to assign members to squads please ask your captain or leadership")
 
 
+@bot.command(brief="schlap a player in the mascara", description="Get owned")
+async def schlap(ctx, member: discord.Member):
+    author_nic = ctx.author.display_name
+    member_nic = member.display_name
+    await ctx.send("OOOHH {} SCHLAPED {}!!! ".format(author_nic, member_nic))
+
+
 @bot.command(brief="Demote Player", description=".demote <@Member> and they will be demoted")
 async def demote(ctx, member: discord.Member):
     author_nic = ctx.author.display_name
