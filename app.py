@@ -66,6 +66,19 @@ async def test(ctx):
         await ctx.send("Test was successful. :radioactive: Now launching the NUKES...  :radioactive: ")
 
 
+@bot.command()
+async def rename(ctx):
+    channels = ["bot-test"]
+    if str(ctx.channel) in channels:
+        for member in ctx.guild.members:
+            if member.display_name != "Sins Manager":
+                gamer_tag = member.display_name[5:]
+                new_display_name = "7DSG " + gamer_tag
+                await member.edit(nick=new_display_name)
+    else:
+        await ctx.send("Test was successful. :radioactive: Now launching the NUKES...  :radioactive: ")
+
+
 @bot.command(
     brief="Kick a member from the community.",
     description="You must include a member and a reason\n"
