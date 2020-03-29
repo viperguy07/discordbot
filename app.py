@@ -1,46 +1,26 @@
-import asyncio
-
-import discord
-from discord.ext import commands
 import os
+# import asyncio
+import datetime
+import sqlite3
+import discord
+import requests
+from dotenv import load_dotenv
+from discord.ext import commands
 
+load_dotenv()
 
-TOKEN = os.environ['DISCORD_TOKEN']
+con = sqlite3.connect('7dsg.db')
+create_table = """ CREATE TABLE IF NOT EXISTS activity (
+                                        discord_id TEXT PRIMARY KEY,
+                                        username TEXT NOT NULL,
+                                        last_active TIMESTAMP NULL
+                                    ); """
+con.execute(create_table)
+con.close()
+
+apikey = os.getenv('XBOX_API')
+TOKEN = os.getenv('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix='.')
-
-clans = {
-        "envy": "EN-",
-        "gluttony": "GLp",
-        "greed": "GRd",
-        "lust": "LU-",
-        "pride": "PDx",
-        "sloth": "SLr",
-        "wrath": "WRh"
-}
-clan_prefix = {
-    'EN-': 'Envy',
-    'ENa': 'Envy',
-    'ENb': 'Envy',
-    'ENc': 'Envy',
-    'ENd': 'Envy',
-    'GLp': 'Gluttony', 
-    'LU-': 'Lust',
-    'LUa': 'Lust',
-    'LUb': 'Lust',
-    'PDx': 'Pride', 
-    'SLr': 'Sloth', 
-    'WRh': 'Wrath'
-}
-promo_rank = {
-    'R': 'P',
-    'P': 'S',
-    'S': 'L'
-}
-demote_rank = {
-    'L': 'S',
-    'S': 'P',
-    'P': 'R'
-}
 
 
 @bot.event
@@ -49,13 +29,117 @@ async def on_ready():
     print('Bot is ready.')
 
 
+@bot.event
+async def on_message(message):
+    conn = sqlite3.connect('7dsg.db')
+    c = conn.cursor()
+    display_name = str(message.author.display_name)
+    dis_id = str(message.author)
+    ctime = str(datetime.datetime.now())
+    dont_track = os.getenv('DONT_TRACK').split(',')
+    if dis_id not in dont_track:
+        q_check = "SELECT EXISTS(SELECT discord_id FROM activity WHERE discord_id=?)"
+        c.execute(q_check, (dis_id,))
+        record = c.fetchone()
+        if record[0] == 1:
+            q = "UPDATE activity SET last_active=?, username=? WHERE discord_id=?"
+            try:
+                c.execute(q, (ctime, display_name, dis_id))
+            except sqlite3.Error as e:
+                print("An error occurred:", e.args[0])
+        else:
+            q = "INSERT OR IGNORE INTO activity (discord_id, username, last_active) values (?, ?, ?)"
+            c.execute(q, (dis_id, display_name, ctime))
+        conn.commit()
+        conn.close()
+        await bot.process_commands(message)
+
+
+@bot.event
+async def on_member_join(member):
+    conn = sqlite3.connect('7dsg.db')
+    c = conn.cursor()
+    display_name = str(member.display_name)
+    dis_id = str(member)
+    ctime = str(datetime.datetime.now())
+    q = "INSERT INTO activity (discord_id, username, last_active) values (?, ?, ?)"
+    c.execute(q, (dis_id, display_name, ctime))
+    conn.commit()
+    conn.close()
+
+
+@bot.event
+async def on_member_remove(member):
+    conn = sqlite3.connect('7dsg.db')
+    c = conn.cursor()
+    dis_id = str(member)
+    q = "DELETE FROM activity WHERE discord_id=?"
+    c.execute(q, (dis_id,))
+    conn.commit()
+    conn.close()
+    print("{} has left on been Kicked/Banned".format(member.display_name))
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send("That command doe not exist type .help for a list of commands")
+
+
 @bot.command()
 async def ping(ctx):
     await ctx.send('pong')
 
 
-@bot.command()
-async def test(ctx):
+@bot.command(
+    brief="Shows last time members were active",
+    description="Shows the last time members sent a message in any chat room"
+)
+async def status(ctx):
+    conn = sqlite3.connect('7dsg.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM activity ORDER BY last_active")
+    records = c.fetchall()
+    conn.close()
+    totals = []
+    for x in records:
+        c = datetime.datetime.now() - datetime.datetime.strptime(x[2], '%Y-%m-%d %H:%M:%S.%f')
+        days = c.days
+        hours = c.seconds // 3600
+        minutes = c.seconds // 60
+        if days > 7:
+            weeks = days // 7
+            if weeks == 1:
+                last_seen = "1 Week ago"
+            else:
+                last_seen = "{} Weeks ago".format(weeks)
+        elif days > 0:
+            if days == 1:
+                last_seen = " 1 Day ago"
+            else:
+                last_seen = "{} Days ago".format(days)
+        elif hours > 0:
+            if hours == 1:
+                last_seen = "1 Hour ago"
+            else:
+                last_seen = "{} Hours ago".format(hours)
+        elif minutes > 0:
+            if minutes == 1:
+                last_seen = "1 Minute ago"
+            else:
+                last_seen = "{} Minutes ago".format(minutes)
+        else:
+            last_seen = "less than a minute ago"
+        totals.append("{} - {}".format(x[1], last_seen))
+    totals = "\n".join(totals)
+    await ctx.send("Members Activity Status\n {}".format(totals))
+
+
+@bot.command(
+    brief="Current member count",
+    description="Shows how many member we currently have"
+)
+async def members(ctx):
     channels = ["bot-test"]
     if str(ctx.channel) in channels:
         x = list([member.display_name for member in ctx.guild.members])
@@ -63,20 +147,12 @@ async def test(ctx):
         x = "\n".join(x)
         await ctx.send(x)
     else:
-        await ctx.send("Test was successful. :radioactive: Now launching the NUKES...  :radioactive: ")
-
-
-@bot.command()
-async def rename(ctx):
-    channels = ["bot-test"]
-    if str(ctx.channel) in channels:
-        for member in ctx.guild.members:
-            if member.display_name != "Sins Manager":
-                gamer_tag = member.display_name[5:]
-                new_display_name = "7DSG " + gamer_tag
-                await member.edit(nick=new_display_name)
-    else:
-        await ctx.send("Test was successful. :radioactive: Now launching the NUKES...  :radioactive: ")
+        total_members = len(ctx.guild.members) - 1
+        await ctx.send(
+            "7 Deadly Sins Gaming currently has {} members, -- Except me I'm more of a genie :genie:".format(
+                total_members
+            )
+        )
 
 
 @bot.command(
@@ -85,18 +161,32 @@ async def rename(ctx):
                 "For Example:\n"
                 ".kick @TestMonkey 'Didn't report hours'"
 )
-async def kick(ctx, member: discord.Member, reason):
-    author_rank = ctx.author.display_name[3:4]
-    rank_allowed = ["C", "L"]
-    channels = ["general"]
+async def kick(ctx, member: discord.Member, *, reason):
+    authorname = ctx.author.display_name
+    username = member.display_name
+    channels = ["general", "bot-test", "bot-audit"]
+    audit_channel = ctx.guild.get_channel(693025739351785542)
+    author_roles = list([role.name.lower() for role in ctx.message.author.roles])
 
-    if author_rank in rank_allowed or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
+    if "leadership" in author_roles:
         if str(ctx.channel) in channels:
             await ctx.guild.kick(member, reason=reason)
             await ctx.send("{0} got the :boot: - Have a great rest of your day {0}, somewhere else."
-                           .format(member.display_name))
+                           .format(username))
+            await audit_channel.send(
+                '**Source_User**: ```ini\n[{}]\n``` **Target_User**: ```ini\n[{}]\n``` |'
+                ' **Action**: ```diff\n-Kicked\n``` **Reason**: ```css\n[{}]\n```'.format(
+                    authorname,
+                    username,
+                    reason
+                )
+            )
         else:
-            await ctx.send("You can only use this command in the 'general' chat. and your are in {}".format(ctx.channel))
+            await ctx.send(
+                "You can only use this command in the 'general' chat. and your are in {}".format(
+                    ctx.channel
+                )
+            )
     else:
         await ctx.send("You don't have the rank to execute this command.")
 
@@ -112,144 +202,80 @@ async def kick_error(ctx, error):
     brief="Add new member to a clan",
     description="To use: .add <@newMember> <Clan> Example: .add @TestMonkey Wrath"
 )
-async def add(ctx, member: discord.Member, clan):
-    author_nic = ctx.author.display_name
-    author_rank = author_nic[3:4]
-    member_nic = member.display_name
-    clan = clan.lower()
-    clan = clan[0].upper() + clan[1:]
-    role = discord.utils.get(ctx.guild.roles, name=clan)
-    clan_tag = member_nic[:3]
-    rank_allowed = ["C", "L", "S"]
+async def add(ctx, member: discord.Member, xbox='yes'):
+    author_name = ctx.author.display_name
+    username = member.display_name
+    channels = ["general", "bot-test", "bot-audit"]
+    audit_channel = ctx.guild.get_channel(693025739351785542)
+    author_roles = list([role.name.lower() for role in ctx.message.author.roles])
+    role = discord.utils.get(ctx.guild.roles, name="Members")
+    nickname = "7DG {}".format(member.display_name)
 
-    if clan.lower() in clans:
-        if clan_tag in clan_prefix:
-            await ctx.send("{} is already in a clan, if you want to switch him use the clan change command "
-                           ".clanchange".format(member.display_name))
-        elif author_rank in rank_allowed or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
-            nickname = clans[clan.lower()] + "R " + member.display_name
+    if "leadership" in author_roles and xbox == 'yes' and str(ctx.channel) in channels:
+        url = "https://xboxapi.com//v2/xuid/{}".format(username)
+
+        payload = {}
+        headers = {
+            'X-AUTH': apikey
+        }
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+        if isinstance(response, int):
             await member.edit(nick=nickname, roles=[role])
             await ctx.send(
-                "Welcome {}, you are now part of {} clan and you can see your clan chat now".format(nickname, clan)
+                "@everyone Please welcome {} as an official member of our community ".format(nickname)
+            )
+            await audit_channel.send(
+                '**Source_User**: ```ini\n[{}]\n``` **Target_User**: ```ini\n[{}]\n``` |'
+                ' **Action**: ```diff\n-Promotion\n``` **Reason**: ```css\n[{}]\n```'.format(
+                    author_name,
+                    username,
+                    "Promoted to member"
+                )
             )
         else:
-            await ctx.send("Contact someone in leadership or the Captain/Lieutenant of the clan to "
-                           "add {} to this clan.")
+            await ctx.send('```diff\n-{0} is not a valid GamerTag.\n``` ```diff\n-{0} must change using .gt first '
+                           'like this example:\n``` ```css\n.gt RealGamerTag\n```'.format(username))
     else:
-        await ctx.send("{} is not the name of any of our clans please try again".format(clan))
+        await ctx.send("Contact someone in leadership to make {} a full member.")
 
 
 @bot.command(
-    brief="Change a member to a different clan",
-    description=""
-                "To use type: "
-                ".clanchange <@newMember> <Clan>"
-                "Example: .clanchange @TestMonkey lust"
-)
-async def clanchange(ctx, member: discord.Member, clan):
-    member_nic = member.display_name
-    print(member)
-    c_rank = member_nic[3:4]
-    c_gt = member_nic[5:]
-    clan_l = clan.lower()
-    clan = clan_l[0].upper() + clan_l[1:]
-    role = discord.utils.get(ctx.guild.roles, name=clan)
-
-    if "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
-        print('here')
-        new_nic = "{}{} {}".format(clans[clan_l], c_rank, c_gt)
-        await member.edit(nick=new_nic, roles=[role])
-        await ctx.send("The request to change {} clans has been approve, "
-                       "Welcome {} the {} clan".format(c_gt, c_gt, clan))
-    else:
-        await ctx.send("Contact someone in leadership to request this change.")
-
-
-@bot.command(
-    brief="Changes your GamerTag on this server",
+    brief="Changes your nickname to your GamerTag",
     description="Just type .gt <new GamerTage> with out the '<>' example: .gt IlovePopCorn"
 )
 async def gt(ctx, *, gtag):
-    author_nic = ctx.author.display_name
-    author_clan = author_nic[:3]
-    if author_clan in clan_prefix:
-        new_gt = author_nic[:4] + " " + gtag
+    username = ctx.author.display_name
+    member = username[5:]
+    if "7DSG " == member:
+        new_gt = "7DG {}".format(gtag)
     else:
         new_gt = gtag
     await ctx.author.edit(nick=new_gt)
     await ctx.send("Your GamerTag has been updated.")
 
 
-@bot.command(brief="Promote Player", description=".promote <@Member> and they will be promoted")
+@bot.command(brief="Promote to leadership", description=".promote <@Member> and they will be promoted to leadership")
 async def promote(ctx, member: discord.Member):
-    author_nic = ctx.author.display_name
-    author_rank = author_nic[3:4]
-    author_clan = author_nic[:2]
-    member_nic = member.display_name
-    member_clan = member_nic[:2]
-    member_rank = member_nic[3:4]
-    rank_allowed = ["C", "L"]
+    author_name = ctx.author.display_name
+    username = member.display_name
+    channels = ["general", "bot-test", "bot-audit"]
+    audit_channel = ctx.guild.get_channel(693025739351785542)
+    author_roles = list([role.name.lower() for role in ctx.message.author.roles])
+    role = discord.utils.get(ctx.guild.roles, name="Leadership")
 
-    # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
-    # grant the request.
-    if author_rank in rank_allowed and author_clan == member_clan or "leadership" \
-            in [y.name.lower() for y in ctx.message.author.roles]:
-        if member_rank in promo_rank:
-            new_rank = list(member_nic)
-            new_rank[3] = promo_rank[member_rank]
-            new_rank = "".join(new_rank)
-            await member.edit(nick=new_rank)
-            await ctx.send("Congrats {} you have been promoted!".format(new_rank))
-        else:
-            await ctx.send("You can't promote anyone to Captain, Please contact leadership")
+    if "leadership" in author_roles and str(ctx.channel) in channels:
+        await member.add_roles(role)
+        await audit_channel.send(
+            '**Source_User**: ```ini\n[{}]\n``` **Target_User**: ```ini\n[{}]\n``` |'
+            ' **Action**: ```diff\n-Promotion\n``` **Reason**: ```css\n[{}]\n```'.format(
+                author_name,
+                username,
+                "Promoted to Leadership"
+            )
+        )
     else:
-        await ctx.send("You don't have permissions to promote {}".format(member))
-
-
-@bot.command(brief="Assign member to a squad", description=".squad <@Member> <squad>")
-async def squad(ctx, member: discord.Member, r_squad):
-    author_nic = ctx.author.display_name
-
-    author_rank = author_nic[3:4]
-    author_clan = author_nic[:2]
-
-    member_nic = member.display_name
-    member_clan = member_nic[:2]
-
-    rank_allowed = ["C", "L"]
-
-    squads = {
-        'a': 'a',
-        'A': 'a',
-        'alpha': 'a',
-        'Alpha': 'a',
-        'b': 'b',
-        'B': 'b',
-        'bravo': 'b',
-        'Bravo': 'b',
-        'c': 'c',
-        'C': 'c',
-        'charlie': 'c',
-        'Charlie': 'c',
-        'd': 'd',
-        'D': 'd',
-        'delta': 'd',
-        'Delta': 'd'
-    }
-    new_squad = squads[r_squad]
-
-    nic_li = list(member_nic)
-    nic_li[2] = new_squad
-    new_nic = "".join(nic_li)
-
-    # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
-    # grant the request.
-    if author_rank in rank_allowed and author_clan == member_clan or "leadership" \
-            in [y.name.lower() for y in ctx.message.author.roles]:
-        await member.edit(nick=new_nic)
-        await ctx.send("Congrats {} you have been assign your new squad!".format(new_nic))
-    else:
-        await ctx.send("You don't have permissions to assign members to squads please ask your captain or leadership")
+        await ctx.send("Only a member of Leadership can preform this action")
 
 
 @bot.command(brief="schlap a player in the mascara", description="Get owned")
@@ -259,53 +285,46 @@ async def schlap(ctx, member: discord.Member):
     await ctx.send("OOOHH {} SCHLAPED {}!!! ".format(author_nic, member_nic))
 
 
-@bot.command(brief="Demote Player", description=".demote <@Member> and they will be demoted")
-async def demote(ctx, member: discord.Member):
-    author_nic = ctx.author.display_name
-    author_rank = author_nic[3:4]
-    author_clan = author_nic[:2]
-    member_nic = member.display_name
-    member_clan = member_nic[:2]
-    member_rank = member_nic[3:4]
-    rank_allowed = ["C", "L"]
-
-    # If Author is a Captain or Lieutenant and author is in the same clan as member. Or if author is leadership then
-    # grant the request.
-    if author_rank in rank_allowed and author_clan == member_clan \
-            or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
-        if member_rank in demote_rank:
-            new_rank = list(member_nic)
-            new_rank[3] = demote_rank[member_rank]
-            new_rank = "".join(new_rank)
-            await member.edit(nick=new_rank)
-            await ctx.send("{} you have been demoted!".format(new_rank))
-        else:
-            await ctx.send("Recruit is the lowest rank, you might want to think of "
-                           "kicking {} if it's that bad".format(member))
-    else:
-        await ctx.send("You don't have permissions to demote {} contact leadership".format(member))
-
-
 @bot.command(brief="Add to Adult Chat", description=".adult <@Member> and member will be added to adult chat")
 async def adult(ctx, member: discord.Member):
-    author_nic = ctx.author.display_name
-    author_rank = author_nic[3:4]
-    rank_allowed = ["C", "L"]
     role = discord.utils.get(ctx.guild.roles, name="Adult")
+    await member.add_roles(role)
 
-    if author_rank in rank_allowed or "leadership" in [y.name.lower() for y in ctx.message.author.roles]:
-        await member.add_roles(role)
+
+@bot.command(
+    brief="Remove from Adult Chat",
+    description=".rmadult <@Member> and member will be removed from adult chat"
+)
+async def rmadult(ctx, member: discord.Member):
+    current_roles = member.roles
+    new_roles = []
+    for r in current_roles:
+        if r != discord.utils.get(ctx.guild.roles, name='Adult'):
+            new_roles.append(r)
+    await member.edit(roles=new_roles)
 
 
 @bot.command()
 async def delete(ctx):
     author = str(ctx.author)
-    if author == 'viperguy07#2473':
+    if author == os.getenv('ADMIN_USER'):
         await ctx.channel.purge(limit=100)
 
 
-@bot.event
-async def on_member_join(member):
-    print('Wow {} Joined the Server'.format(member))
+@bot.command()
+async def dbadd(ctx, member: discord.Member):
+    author = str(ctx.author)
+    if author == os.getenv('ADMIN_USER'):
+        conn = sqlite3.connect('7dsg.db')
+        c = conn.cursor()
+        display_name = str(member.display_name)
+        dis_id = str(member)
+        ctime = str(datetime.datetime.now())
+        q = "INSERT INTO activity (discord_id, username, last_active) values (?, ?, ?)"
+        c.execute(q, (dis_id, display_name, ctime))
+        conn.commit()
+        conn.close()
+    await ctx.channel.purge(limit=1)
+
 
 bot.run(TOKEN)
