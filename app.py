@@ -1,13 +1,15 @@
 import os
-# import asyncio
+import asyncio
 import datetime
-import sqlite3
 import discord
 import requests
 from dotenv import load_dotenv
 from discord.ext import commands
-
 load_dotenv()
+if os.getenv('SQLITE') == 'dev':
+    import sqlite3
+else:
+    from pysqlite3 import dbapi2 as sqlite3
 
 con = sqlite3.connect('7dsg.db')
 create_table = """ CREATE TABLE IF NOT EXISTS activity (
